@@ -1,0 +1,13 @@
+Flask
+flask-cors
+scikit-learn
+joblib
+python-docx
+PyMuPDF
+numpy
+pandas
+nltk
+pytest
+pytest-flask
+werkzeug
+requests
