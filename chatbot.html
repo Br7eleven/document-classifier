@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Classifier Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin: 15px 0;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bot-message {
+            background: #e9ecef;
+            color: #495057;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+            text-align: right;
+            border-bottom-right-radius: 5px;
+        }
+
+        .loading-message {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            align-self: flex-start;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            align-self: flex-start;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            align-self: flex-start;
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .file-input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            flex: 1;
+            padding: 10px;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .classify-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .classify-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .classify-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .file-info {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .category-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+
+        .confidence-bar {
+            background: #e9ecef;
+            height: 8px;
+            border-radius: 4px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997, #17a2b8);
+            transition: width 0.5s ease;
+        }
+
+        .powered-by {
+            text-align: center;
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 2px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #6c757d;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            🤖 Document Classifier Bot
+        </div>
+        
+        <div class="chat-messages" id="messages">
+            <!-- Messages will be added here -->
+        </div>
+        
+        <div class="typing-indicator" id="typingIndicator">
+            <span>Bot is typing</span>
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+        
+        <div class="chat-input">
+            <div class="file-input-container">
+                <input type="file" id="fileInput" accept=".pdf,.docx" class="file-input">
+                <button onclick="classifyDocument()" class="classify-btn" id="classifyBtn">
+                    📄 Classify Document
+                </button>
+            </div>
+            <div class="file-info" id="fileInfo">
+                Supported formats: PDF, DOCX (max 16MB)
+            </div>
+            <div class="powered-by">
+                Powered by Flask + scikit-learn
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000';
+        const AUTH_TOKEN = 'Bearer stub_token_12345';
+
+        function addMessage(message, type = 'bot') {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            
+            if (typeof message === 'string') {
+                messageDiv.textContent = message;
+            } else {
+                messageDiv.appendChild(message);
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'flex';
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        function updateFileInfo(file) {
+            const fileInfo = document.getElementById('fileInfo');
+            if (file) {
+                const size = (file.size / 1024 / 1024).toFixed(2);
+                fileInfo.textContent = `Selected: ${file.name} (${size} MB)`;
+            } else {
+                fileInfo.textContent = 'Supported formats: PDF, DOCX (max 16MB)';
+            }
+        }
+
+        function createResultMessage(data) {
+            const container = document.createElement('div');
+            
+            const categoryText = document.createElement('div');
+            categoryText.innerHTML = `Document classified as: <span class="category-badge">${data.category}</span>`;
+            container.appendChild(categoryText);
+            
+            const confidenceText = document.createElement('div');
+            confidenceText.textContent = `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
+            container.appendChild(confidenceText);
+            
+            const confidenceBar = document.createElement('div');
+            confidenceBar.className = 'confidence-bar';
+            const confidenceFill = document.createElement('div');
+            confidenceFill.className = 'confidence-fill';
+            confidenceFill.style.width = `${data.confidence * 100}%`;
+            confidenceBar.appendChild(confidenceFill);
+            container.appendChild(confidenceBar);
+            
+            const processingTime = document.createElement('div');
+            processingTime.textContent = `Processing time: ${data.processing_time}s`;
+            processingTime.style.fontSize = '0.9em';
+            processingTime.style.color = '#6c757d';
+            processingTime.style.marginTop = '5px';
+            container.appendChild(processingTime);
+            
+            return container;
+        }
+
+        async function classifyDocument() {
+            const fileInput = document.getElementById('fileInput');
+            const classifyBtn = document.getElementById('classifyBtn');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                addMessage('Please select a file first.', 'error');
+                return;
+            }
+
+            // Validate file size
+            if (file.size > 16 * 1024 * 1024) {
+                addMessage('File too large. Maximum size is 16MB.', 'error');
+                return;
+            }
+
+            // Validate file type
+            const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            
+            if (!['pdf', 'docx'].includes(fileExtension)) {
+                addMessage('Unsupported file format. Please upload a PDF or DOCX file.', 'error');
+                return;
+            }
+
+            // Disable button and show loading
+            classifyBtn.disabled = true;
+            classifyBtn.textContent = '🔄 Analyzing...';
+            
+            addMessage(`📤 Uploading ${file.name}...`, 'user');
+            showTypingIndicator();
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`${API_BASE_URL}/classify`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': AUTH_TOKEN
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                hideTypingIndicator();
+                
+                if (response.ok) {
+                    const resultMessage = createResultMessage(data);
+                    addMessage(resultMessage, 'success');
+                } else {
+                    addMessage(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage(`❌ Network error: ${error.message}`, 'error');
+            } finally {
+                // Re-enable button
+                classifyBtn.disabled = false;
+                classifyBtn.textContent = '📄 Classify Document';
+            }
+        }
+
+        // File input change handler
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            updateFileInfo(e.target.files[0]);
+        });
+
+        // Drag and drop functionality
+        const fileInput = document.getElementById('fileInput');
+        const chatContainer = document.querySelector('.chat-container');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            chatContainer.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            chatContainer.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            chatContainer.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            chatContainer.style.background = '#f0f2ff';
+        }
+
+        function unhighlight(e) {
+            chatContainer.style.background = 'white';
+        }
+
+        chatContainer.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                fileInput.files = files;
+                updateFileInfo(files[0]);
+            }
+        }
+
+        // Initialize chat
+        function initializeChat() {
+            addMessage('👋 Welcome! I can help you classify documents into categories: Legal, HR, Finance, Medical, or Technical.');
+            addMessage('📎 Please upload a PDF or DOCX file to get started.');
+        }
+
+        // Check API status on load
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/status`);
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'healthy') {
+                    addMessage('✅ API is online and ready!', 'success');
+                } else {
+                    addMessage('⚠️ API is not responding properly. Please check if the server is running.', 'error');
+                }
+            } catch (error) {
+                addMessage('❌ Cannot connect to API. Please make sure the server is running on http://localhost:5000', 'error');
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            initializeChat();
+            checkAPIStatus();
+        });
+
+        // Enter key handler
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                classifyDocument();
+            }
+        });
+    </script>
+</body>
+</html>
