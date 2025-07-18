@@ -12,7 +12,10 @@ import joblib
 import logging
 from functools import wraps
 
-from utils import extract_text_from_file, preprocess_text, load_model_and_vectorizer
+try:
+    from .utils import extract_text_from_file, preprocess_text, load_model_and_vectorizer
+except ImportError:
+    from utils import extract_text_from_file, preprocess_text, load_model_and_vectorizer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
